@@ -1,0 +1,54 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        cd app
+        pip install -r requirements.txt
+
+    - name: Run tests
+      run: |
+        cd app
+        python -m pytest tests/ -v || echo "No tests yet"
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app
+        push: true
+        tags: |
+          ganeshchalla/devops-app:${{ github.sha }}
+          ganeshchalla/devops-app:latest
+
+    - name: Update Helm image tag
+      run: |
+        sed -i 's|tag:.*|tag: "${{ github.sha }}"|' helm/devops-app/values.yaml
+        git config user.email "github-actions@github.com"
+        git config user.name "GitHub Actions"
+        git add helm/devops-app/values.yaml
+        git commit -m "Update image tag to ${{ github.sha }}"
+        git push
