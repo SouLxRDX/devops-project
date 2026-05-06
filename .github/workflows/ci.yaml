@@ -7,16 +7,17 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write        ← add this
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -55,4 +56,4 @@ jobs:
         git config user.name "GitHub Actions"
         git add helm/devops-app/values.yaml
         git commit -m "Update image tag to ${{ github.sha }}"
-        git push
+        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SouLxRDX/devops-project.git
